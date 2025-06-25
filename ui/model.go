@@ -3,7 +3,6 @@ package ui
 import (
 	"fmt"
 	"os"
-	"sort"
 	"strings"
 	"time"
 
@@ -22,7 +21,6 @@ var (
 	activeBorder   = lipgloss.Color("#00afff") // cyan blue for active
 	inactiveBorder = lipgloss.Color("#444444") // gray for inactive
 	appStyle       = lipgloss.NewStyle().Margin(1, 1)
-	boldStyle      = lipgloss.NewStyle().Bold(true)
 
 	selectedRowStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#1a1a1a")).Background(lipgloss.Color("#00afff")).Bold(true)
 )
@@ -78,144 +76,21 @@ func NewModel(groups []types.GroupedQuery) Model {
 	return m
 }
 
+// Remove table logic from applyFilters, use tablepanel.go
 func (m *Model) applyFilters(tableWidth int) {
 	m.filteredGroups = m.allGroups
-	// Sort by selected column and order
-	less := func(i, j int) bool { return false }
-	switch m.sortColumn {
-	case 0: // Count
-		less = func(i, j int) bool {
-			if m.filteredGroups[i].Count == m.filteredGroups[j].Count {
-				return m.filteredGroups[i].AvgQueryTime > m.filteredGroups[j].AvgQueryTime
-			}
-			return m.filteredGroups[i].Count > m.filteredGroups[j].Count
-		}
-	case 1: // Avg Time
-		less = func(i, j int) bool {
-			return m.filteredGroups[i].AvgQueryTime > m.filteredGroups[j].AvgQueryTime
-		}
-	case 2: // Avg Examined
-		less = func(i, j int) bool {
-			return m.filteredGroups[i].AvgRowsExamined > m.filteredGroups[j].AvgRowsExamined
-		}
-	case 3: // Avg Sent
-		less = func(i, j int) bool {
-			return m.filteredGroups[i].AvgRowsSent > m.filteredGroups[j].AvgRowsSent
-		}
-	case 4: // Type
-		less = func(i, j int) bool {
-			return m.filteredGroups[i].QueryType < m.filteredGroups[j].QueryType
-		}
-	case 5: // DB
-		less = func(i, j int) bool {
-			var dbi, dbj string
-			if len(m.filteredGroups[i].Examples) > 0 {
-				dbi = m.filteredGroups[i].Examples[0].DB
-			}
-			if len(m.filteredGroups[j].Examples) > 0 {
-				dbj = m.filteredGroups[j].Examples[0].DB
-			}
-			return dbi < dbj
-		}
-	case 6: // Table
-		less = func(i, j int) bool {
-			return m.filteredGroups[i].FromTable < m.filteredGroups[j].FromTable
-		}
-	}
-	if m.sortOrder == 0 {
-		sort.Slice(m.filteredGroups, less)
-	} else {
-		sort.Slice(m.filteredGroups, func(i, j int) bool { return less(j, i) })
-	}
-	var rows []table.Row
-	for i, g := range m.filteredGroups {
-		db := ""
-		if len(g.Examples) > 0 {
-			db = g.Examples[0].DB
-		}
-		tableName := g.FromTable
-		// Dynamically calculate max width for shortQuery
-		minOtherCols := 4 + 8 + 24 + 16 + 8 + 10 + 12 + 10 + 8 // sum of fixed col widths + padding (added 16 for Table col)
-		maxShortQuery := tableWidth - minOtherCols
-		if maxShortQuery > 50 {
-			maxShortQuery = 50 // hard cap to avoid wrapping
-		}
-		if maxShortQuery < 10 {
-			maxShortQuery = 10
-		}
-		shortQuery := g.NormalizedSQL
-		if len(shortQuery) > maxShortQuery {
-			shortQuery = shortQuery[:maxShortQuery-3] + "..."
-		}
-		row := table.Row{
-			fmt.Sprintf("%d", i+1),
-			g.QueryType,
-			db,
-			tableName,
-			fmt.Sprintf("%d", g.Count),
-			fmt.Sprintf("%.2fs", g.AvgQueryTime),
-			fmt.Sprintf("%.0f", g.AvgRowsExamined),
-			fmt.Sprintf("%.0f", g.AvgRowsSent),
-			shortQuery,
-		}
-		rows = append(rows, row)
-	}
-
-	cols := []table.Column{
-		{Title: "#", Width: 4},
-		{Title: "Type", Width: 8},
-		{Title: "DB", Width: 24},
-		{Title: "Table", Width: 26},
-		{Title: "Count", Width: 8},
-		{Title: "Avg Time", Width: 10},
-		{Title: "Avg Examined", Width: 12},
-		{Title: "Avg Sent", Width: 10},
-		{Title: "Query", Width: 50},
-	}
-
-	t := table.New(
-		table.WithColumns(cols),
-		table.WithRows(rows),
-		table.WithFocused(true),
-		table.WithHeight(m.height/2-2),
-	)
-	// Set custom style for selected row
-	t.SetStyles(table.Styles{
-		Selected: selectedRowStyle,
-	})
-	m.table = t
+	SortGroups(m.filteredGroups, m.sortColumn, m.sortOrder)
+	m.table = NewTablePanel(m.filteredGroups, tableWidth, m.height/2-2)
 }
 
 func (m *Model) updateViewport() {
 	cursor := m.table.Cursor()
 	if cursor >= 0 && cursor < len(m.filteredGroups) {
 		g := m.filteredGroups[cursor]
-		header := fmt.Sprintf("%s | %d queries | Avg: %.2fs, %.0f rows examined, %.0f sent\n\n",
-			boldStyle.Render(g.QueryType),
-			g.Count,
-			g.AvgQueryTime,
-			g.AvgRowsExamined,
-			g.AvgRowsSent,
-		)
-		var allQueries strings.Builder
-		for i, q := range g.Examples {
-			allQueries.WriteString(q.SQLText)
-			if i < len(g.Examples)-1 {
-				allQueries.WriteString("\n---\n")
-			}
-		}
-		start := time.Now()
-		var content string
-		switch m.highlightMode {
-		case HighlightSimple:
-			content = HighlightSQL(allQueries.String())
-		case HighlightOff:
-			content = allQueries.String()
-		}
-		dur := time.Since(start)
-		m.statusText = fmt.Sprintf("Render: %dms", dur.Milliseconds())
-		m.statusColor = lipgloss.Color("#ffaf00") // orange for timing
-		m.viewport.SetContent(header + content)
+		// Use NewPreviewPanel for preview logic
+		m.viewport = NewPreviewPanel(g, int(m.highlightMode), m.viewport.Width, m.viewport.Height)
+		m.statusText = ""
+		m.statusColor = ""
 	}
 }
 
@@ -347,79 +222,21 @@ func flashStatus() tea.Cmd {
 
 type flashStatusMsg struct{}
 
-var helpOptions = []struct{ Key, Desc string }{
-	{"↑/↓", "Scroll"},
-	{"↵", "Show Queries"},
-	{"Tab", "Switch panel"},
-	{"l", "Sort"},
-	{"s", "Save queries"},
-	{"z", "Zoom"},
-	{"h", "HL-mode"},
-	{"q", "Quit"},
-}
-
 func (m Model) View() string {
 	panelWidth := m.viewport.Width // use the actual viewport width for all panels
 
 	if m.showSortModal {
-		modalWidth := 60
-		modalHeight := len(m.sortColumns) + 6
-		var b strings.Builder
-		b.WriteString("Sort by column and order:\n\n")
-		b.WriteString("Column" + strings.Repeat(" ", 28) + "Order\n")
-		b.WriteString(strings.Repeat("-", modalWidth-4) + "\n")
-		maxRows := len(m.sortColumns)
-		if maxRows < 2 {
-			maxRows = 2
-		}
-		for i := 0; i < maxRows; i++ {
-			// Column radio
-			colRadio := "  "
-			if m.sortModalCursor == i && m.sortModalFocus == 0 {
-				colRadio = "▶ " // focused
-			} else {
-				colRadio = "  "
-			}
-			if i < len(m.sortColumns) {
-				selected := "○"
-				if m.sortColumn == i {
-					selected = "●"
-				}
-				colRadio += selected + " " + m.sortColumns[i]
-			} else {
-				colRadio = ""
-			}
-			// Order radio
-			orderRadio := "  "
-			if m.sortOrder == i && m.sortModalFocus == 1 {
-				orderRadio = "▶ "
-			} else {
-				orderRadio = "  "
-			}
-			if i < 2 {
-				selected := "○"
-				if m.sortOrder == i {
-					selected = "●"
-				}
-				orderName := "Ascending"
-				if i == 1 {
-					orderName = "Descending"
-				}
-				orderRadio += selected + " " + orderName
-			}
-			b.WriteString(fmt.Sprintf("%-35s   %-20s\n", colRadio, orderRadio))
-		}
-		b.WriteString("\n[Tab] Switch  [↑/↓] Move  [Enter] Apply  [Esc] Cancel")
-		modal := lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).Width(modalWidth).Height(modalHeight).Align(lipgloss.Center).Render(b.String())
-		padTop := (m.height - modalHeight) / 2
-		padLeft := (panelWidth - modalWidth) / 2
-		if padTop < 0 {
-			padTop = 0
-		}
-		if padLeft < 0 {
-			padLeft = 0
-		}
-		modal = strings.Repeat("\n", padTop) + lipgloss.NewStyle().MarginLeft(padLeft).Render(modal)
+		// Use RenderSortModal
+		modal := RenderSortModal(SortModalState{
+			SortColumns:     m.sortColumns,
+			SortColumn:      m.sortColumn,
+			SortOrder:       m.sortOrder,
+			SortModalCursor: m.sortModalCursor,
+			SortModalFocus:  m.sortModalFocus,
+			Height:          m.height,
+			Width:           60,
+			PanelWidth:      panelWidth,
+		})
 		return modal
 	}
 
@@ -436,32 +253,7 @@ func (m Model) View() string {
 	tableBox := tableBoxStyle.Width(panelWidth).Render(tableContent)
 	sqlBox := sqlBoxStyle.Width(panelWidth).Render(m.viewport.View())
 
-	highlightStatus := "[h] Highlight: "
-	switch m.highlightMode {
-	case HighlightSimple:
-		highlightStatus += "ON"
-	case HighlightOff:
-		highlightStatus += "OFF"
-	}
-
-	helpParts := make([]string, len(helpOptions))
-	for i, opt := range helpOptions {
-		helpParts[i] = fmt.Sprintf("[%s] %s", opt.Key, opt.Desc)
-	}
-	helpText := strings.Join(helpParts, "  ") + "  " + highlightStatus
-	status := m.statusText
-	statusColor := m.statusColor
-	if status == "" {
-		status = ""
-		statusColor = ""
-	}
-	space := panelWidth - lipgloss.Width(helpText) - lipgloss.Width(status) - 4 // 4 for border padding
-	if space < 1 {
-		space = 1
-	}
-	statusStyled := lipgloss.NewStyle().Foreground(statusColor).Render(status)
-	helpLine := helpText + strings.Repeat(" ", space) + statusStyled
-	helpBox := lipgloss.NewStyle().Border(lipgloss.NormalBorder()).Width(panelWidth).Height(1).Render(helpLine)
+	helpBox := RenderHelpPanel(int(m.highlightMode), panelWidth, m.statusText, m.statusColor)
 
 	mainUI := appStyle.Margin(0, 0).Render(
 		tableBox + "\n" + sqlBox + "\n" + helpBox,
