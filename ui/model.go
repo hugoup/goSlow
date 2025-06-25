@@ -9,7 +9,6 @@ import (
 
 	"slowlog-tui/types"
 
-	"github.com/alecthomas/chroma/quick"
 	"github.com/charmbracelet/bubbles/table"
 	"github.com/charmbracelet/bubbles/textinput"
 	"github.com/charmbracelet/bubbles/viewport"
@@ -40,7 +39,6 @@ type HighlightMode int
 const (
 	HighlightOff HighlightMode = iota
 	HighlightSimple
-	HighlightChroma
 )
 
 type Model struct {
@@ -53,7 +51,7 @@ type Model struct {
 	lastCursor     int
 	statusText     string         // for flash/status messages
 	statusColor    lipgloss.Color // color for status message
-	highlightMode  HighlightMode  // 0=off, 1=simple, 2=chroma
+	highlightMode  HighlightMode  // 0=off, 1=simple
 	zoomed         bool           // fullscreen preview mode
 
 	// Sorting modal state
@@ -209,14 +207,6 @@ func (m *Model) updateViewport() {
 		start := time.Now()
 		var content string
 		switch m.highlightMode {
-		case HighlightChroma:
-			var highlighted strings.Builder
-			err := quick.Highlight(&highlighted, allQueries.String(), "sql", "terminal256", "monokai")
-			if err == nil {
-				content = highlighted.String()
-			} else {
-				content = allQueries.String()
-			}
 		case HighlightSimple:
 			content = HighlightSQL(allQueries.String())
 		case HighlightOff:
@@ -266,7 +256,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.viewport.GotoTop() // reset scroll position to top
 			}
 		case "h":
-			m.highlightMode = (m.highlightMode + 1) % 3
+			m.highlightMode = (m.highlightMode + 1) % 2
 			m.updateViewport()
 		case "z":
 			m.zoomed = !m.zoomed
@@ -448,10 +438,8 @@ func (m Model) View() string {
 
 	highlightStatus := "[h] Highlight: "
 	switch m.highlightMode {
-	case HighlightChroma:
-		highlightStatus += "CHROMA"
 	case HighlightSimple:
-		highlightStatus += "SIMPLE"
+		highlightStatus += "ON"
 	case HighlightOff:
 		highlightStatus += "OFF"
 	}
