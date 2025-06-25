@@ -79,3 +79,18 @@ func RenderSortModal(state SortModalState) string {
 	modal = strings.Repeat("\n", padTop) + lipgloss.NewStyle().MarginLeft(padLeft).Render(modal)
 	return modal
 }
+
+// RenderSortModalView renders the sort modal using the Model
+func RenderSortModalView(m Model) string {
+	panelWidth := m.viewport.Width
+	return RenderSortModal(SortModalState{
+		SortColumns:     m.sortColumns,
+		SortColumn:      m.sortColumn,
+		SortOrder:       m.sortOrder,
+		SortModalCursor: m.sortModalCursor,
+		SortModalFocus:  m.sortModalFocus,
+		Height:          m.height,
+		Width:           60,
+		PanelWidth:      panelWidth,
+	})
+}

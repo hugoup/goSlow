@@ -3,7 +3,6 @@ package ui
 import (
 	"fmt"
 	"os"
-	"strings"
 	"time"
 
 	"slowlog-tui/types"
@@ -214,6 +213,17 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, cmd
 }
 
+// Add View method to Model to satisfy tea.Model interface
+func (m Model) View() string {
+	if m.showSortModal {
+		return RenderSortModalView(m)
+	}
+	if m.zoomed {
+		return RenderZoomedPreviewView(m)
+	}
+	return RenderMainUIView(m)
+}
+
 func flashStatus() tea.Cmd {
 	return func() tea.Msg {
 		return flashStatusMsg{}
@@ -221,68 +231,5 @@ func flashStatus() tea.Cmd {
 }
 
 type flashStatusMsg struct{}
-
-func (m Model) View() string {
-	panelWidth := m.viewport.Width // use the actual viewport width for all panels
-
-	if m.showSortModal {
-		// Use RenderSortModal
-		modal := RenderSortModal(SortModalState{
-			SortColumns:     m.sortColumns,
-			SortColumn:      m.sortColumn,
-			SortOrder:       m.sortOrder,
-			SortModalCursor: m.sortModalCursor,
-			SortModalFocus:  m.sortModalFocus,
-			Height:          m.height,
-			Width:           60,
-			PanelWidth:      panelWidth,
-		})
-		return modal
-	}
-
-	// Render main UI (table + preview + help) as usual
-	tableContent := m.table.View()
-	var tableBoxStyle, sqlBoxStyle lipgloss.Style
-	if m.focus == focusTable {
-		tableBoxStyle = leftStyle.BorderForeground(activeBorder)
-		sqlBoxStyle = rightStyle.BorderForeground(inactiveBorder)
-	} else {
-		tableBoxStyle = leftStyle.BorderForeground(inactiveBorder)
-		sqlBoxStyle = rightStyle.BorderForeground(activeBorder)
-	}
-	tableBox := tableBoxStyle.Width(panelWidth).Render(tableContent)
-	sqlBox := sqlBoxStyle.Width(panelWidth).Render(m.viewport.View())
-
-	helpBox := RenderHelpPanel(int(m.highlightMode), panelWidth, m.statusText, m.statusColor)
-
-	mainUI := appStyle.Margin(0, 0).Render(
-		tableBox + "\n" + sqlBox + "\n" + helpBox,
-	)
-
-	// Restore true zoom: if zoomed, show only the preview panel fullscreen
-	if m.zoomed {
-		zoomBoxStyle := rightStyle.BorderForeground(activeBorder)
-		m.viewport.Height = m.height - 3 // use all available rows minus help/status line
-		zoomBox := zoomBoxStyle.Width(panelWidth).Height(m.viewport.Height).Render(m.viewport.View())
-		// Help/status line
-		helpText := "[z] Unzoom  [h] Highlight  [q] Quit"
-		status := m.statusText
-		statusColor := m.statusColor
-		if status == "" {
-			status = ""
-			statusColor = ""
-		}
-		space := panelWidth - lipgloss.Width(helpText) - lipgloss.Width(status) - 4
-		if space < 1 {
-			space = 1
-		}
-		statusStyled := lipgloss.NewStyle().Foreground(statusColor).Render(status)
-		helpLine := helpText + strings.Repeat(" ", space) + statusStyled
-		helpBox := lipgloss.NewStyle().Border(lipgloss.NormalBorder()).Width(panelWidth).Height(1).Render(helpLine)
-		mainUI = appStyle.Margin(0, 0).Render(zoomBox + "\n" + helpBox)
-	}
-
-	return mainUI
-}
 
 type clearStatusMsg struct{}
