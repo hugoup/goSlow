@@ -292,6 +292,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case "up", "k":
 				if m.sortModalFocus == 0 && m.sortModalCursor > 0 {
 					m.sortModalCursor--
+					m.sortColumn = m.sortModalCursor // move selection with cursor
 				}
 				if m.sortModalFocus == 1 && m.sortOrder > 0 {
 					m.sortOrder--
@@ -299,12 +300,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case "down", "j":
 				if m.sortModalFocus == 0 && m.sortModalCursor < len(m.sortColumns)-1 {
 					m.sortModalCursor++
+					m.sortColumn = m.sortModalCursor // move selection with cursor
 				}
 				if m.sortModalFocus == 1 && m.sortOrder < 1 {
 					m.sortOrder++
 				}
 			case "enter":
-				m.sortColumn = m.sortModalCursor
 				m.showSortModal = false
 				m.applyFilters(m.viewport.Width)
 				return m, nil
@@ -355,6 +356,17 @@ func flashStatus() tea.Cmd {
 }
 
 type flashStatusMsg struct{}
+
+var helpOptions = []struct{ Key, Desc string }{
+	{"↑/↓", "Scroll"},
+	{"↵", "Show Queries"},
+	{"Tab", "Switch panel"},
+	{"l", "Sort"},
+	{"s", "Save queries"},
+	{"z", "Zoom"},
+	{"h", "HL-mode"},
+	{"q", "Quit"},
+}
 
 func (m Model) View() string {
 	panelWidth := m.viewport.Width // use the actual viewport width for all panels
@@ -444,7 +456,11 @@ func (m Model) View() string {
 		highlightStatus += "OFF"
 	}
 
-	helpText := "[↑/↓] Scroll  [Enter] Show Queries  [Tab] Switch   [q] Quit   [s] Save  [z] Zoom  " + highlightStatus
+	helpParts := make([]string, len(helpOptions))
+	for i, opt := range helpOptions {
+		helpParts[i] = fmt.Sprintf("[%s] %s", opt.Key, opt.Desc)
+	}
+	helpText := strings.Join(helpParts, "  ") + "  " + highlightStatus
 	status := m.statusText
 	statusColor := m.statusColor
 	if status == "" {
