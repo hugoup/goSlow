@@ -21,7 +21,7 @@
 
 ## 🖥️ Screenshots
 
-![goSlow Screenshot](https://raw.githubusercontent.com/yourusername/goSlow/main/screenshots/screenshot.png)
+![goSlow Screenshot](https://raw.githubusercontent.com/hugoup/goSlow/main/screenshots/goSlow.png)
 
 ---
 
