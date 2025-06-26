@@ -1,0 +1,54 @@
+# Binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# Output of build tools
+/build/
+/bin/
+/dist/
+
+# Go workspace file
+*.code-workspace
+
+# Go modules
+/go.sum
+
+# Dependency directories (vendor/)
+vendor/
+
+# IDE/editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*.bak
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Test output
+*.coverprofile
+*.testresult
+
+# User-specific
+.env
+.env.*
+
+# Ignore database dumps
+*.sql
+
+# Ignore generated files
+*.generated.go
+
+# Ignore local config
+config.local.*
