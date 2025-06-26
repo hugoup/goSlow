@@ -2,11 +2,11 @@
 
 ![goSlow Banner](https://img.shields.io/badge/TUI-Go-blue?style=flat-square)
 
-**goSlow** is a blazing-fast, modern terminal user interface (TUI) for exploring and analyzing MySQL slow query logs. Designed for database engineers, developers, and performance enthusiasts, goSlow makes it effortless to find, sort, and inspect problematic queries?right from your terminal.
+**goSlow** is a blazing-fast, modern terminal user interface (TUI) for exploring and analyzing MySQL slow query logs. Designed for database engineers, developers, and performance enthusiasts, goSlow makes it effortless to find, sort, and inspect problematic queries—right from your terminal.
 
 ---
 
-## ?? Features
+## 🚀 Features
 
 - **Instant Grouping:** Automatically groups similar slow queries for easy analysis.
 - **Interactive Table:** Navigate, sort, and filter queries with keyboard shortcuts.
@@ -19,13 +19,13 @@
 
 ---
 
-## ??? Screenshots
+## 🖥️ Screenshots
 
 ![goSlow Screenshot](...)
 
 ---
 
-## ?? Quick Start
+## ⚡️ Quick Start
 
 1. **Clone the repo:**
    ```sh
@@ -41,11 +41,11 @@
 
 ---
 
-## ?? Key Bindings
+## ⌨️ Key Bindings
 
 | Key         | Action                                 |
 |-------------|----------------------------------------|
-| ?/?         | Move selection                         |
+| ↑/↓         | Move selection                         |
 | Tab         | Switch focus (table/preview)           |
 | Enter       | Preview selected query group           |
 | s           | Save selected query to file            |
@@ -56,6 +56,6 @@
 
 ---
 
-## ??? Requirements
+## 🛠️ Requirements
 - Go 1.20+
 - MySQL server with `slow_log` table enabled
