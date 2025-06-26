@@ -16,7 +16,6 @@ import (
 func FormatSQLForDisplay(sqlText string) string {
 	clauses := []string{
 		"ORDER BY", "GROUP BY", "HAVING", "LIMIT", "WHERE",
-		// "LEFT JOIN", "RIGHT JOIN", "INNER JOIN","OUTER JOIN", "JOIN", "UNION", "EXCEPT", "INTERSECT", "RETURNING", "VALUES", "SET"
 	}
 	for _, clause := range clauses {
 		// Regex: find clause with word boundary, case-insensitive
@@ -77,7 +76,7 @@ func FetchSlowQueries(dsn string) ([]types.GroupedQuery, error) {
 			continue
 		}
 		q.QueryType = extractQueryType(q.SQLText)
-		q.SQLText = FormatSQLForDisplay(q.SQLText) // <--- format for display
+		q.SQLText = FormatSQLForDisplay(q.SQLText)
 		allQueries = append(allQueries, q)
 		id++
 	}

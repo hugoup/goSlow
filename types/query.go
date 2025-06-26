@@ -10,16 +10,16 @@ type SlowQuery struct {
 	SQLText      string
 	RowsSent     int
 	LockTime     string
-	QueryType    string // NEW: type of query (SELECT, UPDATE, etc)
+	QueryType    string
 }
 
 type GroupedQuery struct {
 	NormalizedSQL   string
 	QueryType       string
-	FromTable       string // extracted main table name
+	FromTable       string
 	Count           int
 	AvgQueryTime    float64
 	AvgRowsExamined float64
 	AvgRowsSent     float64
-	Examples        []SlowQuery // all queries in this group
+	Examples        []SlowQuery
 }

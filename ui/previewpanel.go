@@ -11,7 +11,6 @@ import (
 )
 
 // PreviewPanel handles the SQL preview/viewport logic
-// Stateless; state is managed by the main Model
 func NewPreviewPanel(g types.GroupedQuery, highlightMode int, width, height int) viewport.Model {
 	header := fmt.Sprintf("%s | %d queries | Avg: %.2fs, %.0f rows examined, %.0f sent\n\n",
 		lipgloss.NewStyle().Bold(true).Render(g.QueryType),

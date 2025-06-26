@@ -14,7 +14,6 @@ func main() {
 	dsn := "root:test123@tcp(127.0.0.1:3306)/mysql"
 	queries, err := db.FetchSlowQueries(dsn)
 
-	// ?? CHECK ERROR FIRST
 	if err != nil {
 		fmt.Println("-> Error loading slow log:", err)
 		os.Exit(1)
