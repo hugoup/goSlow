@@ -25,22 +25,6 @@
 
 ---
 
-## ⚡️ Quick Start
-
-1. **Clone the repo:**
-   ```sh
-   git clone https://github.com/yourusername/goSlow.git
-   cd goSlow
-   ```
-2. **Configure MySQL access:**
-   - Edit the DSN in `main.go` to match your MySQL credentials.
-3. **Run the TUI:**
-   ```sh
-   go run main.go
-   ```
-
----
-
 ## ⌨️ Key Bindings
 
 | Key         | Action                                 |
@@ -54,8 +38,6 @@
 | z           | Zoom preview panel                     |
 | q / Ctrl+C  | Quit                                   |
 
----
-
 ## 🛠️ Requirements
-- Go 1.20+
-- MySQL server with `slow_log` table enabled
+- MySQL-compatible database with `slow_log` table enabled
+- Running on localhost:3306 for now
