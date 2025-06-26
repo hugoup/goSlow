@@ -7,7 +7,6 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-// HelpOptions defines the key/desc pairs for the help panel
 var HelpOptions = []struct{ Key, Desc string }{
 	{"↑/↓", "Scroll"},
 	{"↵", "Show Queries"},
@@ -19,7 +18,6 @@ var HelpOptions = []struct{ Key, Desc string }{
 	{"q", "Quit"},
 }
 
-// RenderHelpPanel returns the help line string for the bottom panel
 func RenderHelpPanel(highlightMode int, panelWidth int, status string, statusColor lipgloss.Color) string {
 	highlightStatus := "[h] Highlight: "
 	switch highlightMode {
